@@ -1,0 +1,2177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> Google Cloud - AI Capacity Planner & Strategy</title>
+  <!-- Modern Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --surface-color: rgba(255, 255, 255, 0.85);
+      --surface-color-light: #ffffff;
+      --primary-color: #3b82f6;
+      --primary-hover: #2563eb;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: rgba(0, 0, 0, 0.08);
+      --accent-color: #10b981;
+
+      /* Table Colors updated for minimalistic aesthetic */
+      --table-header-bg: #f1f5f9;
+      --table-header-text: #334155;
+      --scenario-header-a: rgba(239, 68, 68, 0.1);
+      --scenario-header-c: rgba(14, 165, 233, 0.1);
+      --scenario-header-f: rgba(34, 197, 94, 0.1);
+      --scenario-header-text: #0f172a;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: linear-gradient(-45deg, #f8fafc, #f1f5f9, #ffffff, #e2e8f0);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    @keyframes gradientBG {
+      0% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    .header {
+      width: 100%;
+      padding: 1rem 0;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      margin-bottom: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #2563eb, #7c3aed, #db2777);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    .header p {
+      margin: 0.3rem 0 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 400;
+    }
+
+    .container {
+      width: 98%;
+      max-width: 1600px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding-bottom: 2rem;
+    }
+
+    .glass-panel {
+      background: var(--surface-color);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: 16px;
+      padding: 1.25rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+    }
+
+    .glass-panel:hover {
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.06), 0 0 20px rgba(59, 130, 246, 0.05);
+    }
+
+    .section-title {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #0f172a;
+      display: inline-block;
+      position: relative;
+      padding-bottom: 0.3rem;
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 40%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary-color), transparent);
+      border-radius: 2px;
+    }
+
+    /* Model Selection & Hover Specs */
+    .controls-row {
+      display: flex;
+      justify-content: flex-start;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: center;
+      background: rgba(241, 245, 249, 0.6);
+      padding: 0.75rem 1.25rem;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+    }
+
+    .controls-row label {
+      font-weight: 500;
+      font-size: 1rem;
+      color: #334155;
+    }
+
+    .model-select-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      position: relative;
+    }
+
+    select {
+      background-color: #ffffff;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    select:focus {
+      border-color: var(--primary-hover);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    /* Info Icon & Tooltip Container */
+    .info-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      cursor: help;
+      position: relative;
+      transition: color 0.2s;
+    }
+
+    .info-icon:hover {
+      color: var(--primary-hover);
+    }
+
+    .hover-card {
+      position: absolute;
+      top: 150%;
+      left: 0;
+      transform: translateY(15px);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 0 30px rgba(59, 130, 246, 0.05);
+      border-radius: 16px;
+      padding: 1.5rem;
+      width: 340px;
+      z-index: 1000;
+      color: #0f172a;
+    }
+
+    /* Arrow pointing up for tooltip */
+    .hover-card::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: 10px;
+      width: 12px;
+      height: 12px;
+      background: rgba(255, 255, 255, 0.98);
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      border-left: 1px solid rgba(0, 0, 0, 0.08);
+      transform: rotate(45deg);
+    }
+
+    .info-icon:hover .hover-card {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .hover-card h4 {
+      margin: 0 0 1rem 0;
+      color: #2563eb;
+      font-size: 1.15rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      padding-bottom: 0.5rem;
+    }
+
+    .spec-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .spec-list li strong {
+      display: block;
+      color: #334155;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .spec-list li {
+      color: #475569;
+    }
+
+    /* Scenarios Grid */
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+
+    .scenario-card {
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 14px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+      transition: border-color 0.3s ease;
+    }
+
+    .scenario-card:hover {
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+
+    .scenario-card h3 {
+      margin-top: 0;
+      color: #0f172a;
+      font-size: 1.15rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 0.75rem;
+      position: relative;
+    }
+
+    .input-group label {
+      font-size: 0.8rem;
+      color: #475569;
+      margin-bottom: 0.3rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .input-group input {
+      background-color: #f8fafc;
+      color: #0f172a;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 400;
+      font-family: inherit;
+      transition: all 0.3s ease;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--primary-hover);
+      background-color: #ffffff;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+
+    /* Throughput Display */
+    .throughput-display {
+      margin-top: auto;
+      padding: 0.75rem;
+      background: linear-gradient(145deg, #f0f9ff, #ffffff);
+      border: 1px solid #bae6fd;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+
+    .throughput-label {
+      font-size: 0.85rem;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 500;
+    }
+
+    .throughput-value-wrapper {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+    }
+
+    .tp-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #2563eb;
+    }
+
+    .tp-unit {
+      font-size: 0.85rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .action-row {
+      display: flex;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+
+    button.btn-primary {
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.75rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    button.btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 35px rgba(37, 99, 235, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+    }
+
+    button.btn-primary:active {
+      transform: translateY(1px);
+    }
+
+    /* Results Tables */
+    .results-container {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .scenario-table-container {
+      background: #ffffff;
+      color: #334155;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-left: 6px solid var(--scenario-color, #3b82f6);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.04);
+      margin-bottom: 0.5rem;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .scenario-table-container:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08);
+    }
+
+    .scenario-title {
+      padding: 1.25rem 1.5rem;
+      font-weight: 600;
+      font-size: 1.15rem;
+      color: #0f172a;
+      background: linear-gradient(90deg, color-mix(in srgb, var(--scenario-color) 8%, transparent), transparent);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .scenario-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--scenario-color);
+      color: #ffffff;
+      border-radius: 8px;
+      font-size: 1.2rem;
+      font-weight: 800;
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--scenario-color) 30%, transparent);
+      flex-shrink: 0;
+    }
+
+    .color-a {
+      --scenario-color: #ef4444;
+    }
+
+    /* Red */
+    .color-b {
+      --scenario-color: #f97316;
+    }
+
+    /* Orange */
+    .color-c {
+      --scenario-color: #eab308;
+    }
+
+    /* Yellow */
+    .color-d {
+      --scenario-color: #84cc16;
+    }
+
+    /* Lime */
+    .color-e {
+      --scenario-color: #22c55e;
+    }
+
+    /* Green */
+    .color-f {
+      --scenario-color: #06b6d4;
+    }
+
+    /* Cyan */
+    .color-g {
+      --scenario-color: #3b82f6;
+    }
+
+    /* Blue */
+    .color-h {
+      --scenario-color: #a855f7;
+    }
+
+    /* Purple */
+    .color-custom {
+      --scenario-color: #f43f5e;
+    }
+
+    /* Rose / Pink for Custom Scenario */
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th,
+    td {
+      text-align: right;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+      white-space: nowrap;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+      background: color-mix(in srgb, var(--scenario-color) 4%, transparent);
+      border-top: 1px solid color-mix(in srgb, var(--scenario-color) 15%, transparent);
+      font-size: 1.05rem;
+    }
+
+    th {
+      background-color: #f8fafc;
+      font-weight: 500;
+      color: #475569;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    th:first-child,
+    td:first-child {
+      text-align: left;
+      font-weight: 400;
+    }
+
+    .bold-row td {
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    tr:hover td {
+      background-color: #f1f5f9;
+    }
+
+    .highlight-price {
+      color: #059669;
+      font-weight: 700;
+    }
+
+    /* Tab Navigation */
+    .tab-navigation {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      background: rgba(241, 245, 249, 0.8);
+      padding: 0.4rem;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(10px);
+    }
+
+    .tab-btn {
+      background: transparent;
+      color: #475569;
+      border: none;
+      padding: 0.6rem 1.5rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      font-family: inherit;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .tab-btn:hover {
+      color: #0f172a;
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--primary-color), #2563eb);
+      color: white;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+    }
+
+    .tab-panel {
+      display: none;
+      width: 100%;
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    .tab-panel.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Custom Sliders */
+    .slider-container {
+      background: #f8fafc;
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      margin-bottom: 1.5rem;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .slider-title {
+      font-weight: 600;
+      color: #1e293b;
+      font-size: 1.1rem;
+      letter-spacing: 0.02em;
+    }
+
+    .slider-value-badge {
+      background: #eff6ff;
+      color: #2563eb;
+      padding: 0.35rem 0.85rem;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border: 1px solid #bfdbfe;
+    }
+
+    .custom-range {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      outline: none;
+      transition: background 0.3s;
+    }
+
+    .custom-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(59, 130, 246, 0.4);
+      border: 2px solid #fff;
+      transition: transform 0.1s;
+    }
+
+    .custom-range::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Quick Ballpark Two-Column Layout */
+    #quick-ballpark-container.cuj3-layout {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 2rem;
+      width: 100%;
+    }
+
+    #quick-ballpark-container.cuj3-layout>* {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    /* Mobile responsive: stack vertically on small screens */
+    @media (max-width: 768px) {
+      #quick-ballpark-container.cuj3-layout {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <h1>Vertex AI Capacity Planner</h1>
+    <p>Strategy Modeling & Cost Estimations for Google Models on Vertex AI</p>
+  </div>
+
+  <div class="container">
+
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+      <button class="tab-btn active" onclick="switchTab('inputs')" id="tab-btn-inputs">Configuration & Inputs</button>
+      <button class="tab-btn" onclick="switchTab('results')" id="tab-btn-results">Predefined Scenarios</button>
+      <button class="tab-btn" onclick="switchTab('custom')" id="tab-btn-custom">Custom Explorer</button>
+
+      <button class="tab-btn" onclick="switchTab('readme')" id="tab-btn-readme">Readme & Guide</button>
+    </div>
+
+    <!-- Inputs Section (Tab 1) -->
+    <div id="tab-inputs" class="tab-panel active">
+      <div class="glass-panel">
+        <h2 class="section-title">Model Configuration</h2>
+        <div class="controls-row">
+          <label for="modelSelect">Target Model:</label>
+          <div class="model-select-wrapper">
+            <select id="modelSelect" onchange="updateModelSpecs(this.value)">
+              <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview</option>
+              <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash Lite Preview</option>
+              <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+              <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+              <option value="gemini-2.5-flash-image">Gemini 2.5 Flash Image</option>
+              <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+              <option value="gemini-3.1-flash-image-preview">Gemini 3.1 Flash Image Preview</option>
+              <option value="gemini-3-pro-image-preview">Gemini 3 Pro Image Preview</option>
+              <option value="veo-3.1-generate-001">Veo 3.1</option>
+              <option value="veo-3.1-fast-generate-001">Veo 3.1 Fast</option>
+              <option value="veo-3.1-lite">Veo 3.1 Lite</option>
+
+            </select>
+            <div class="info-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 16v-4"></path>
+                <path d="M12 8h.01"></path>
+              </svg>
+              <div class="hover-card">
+                <h4 id="spec-tooltip-title">Gemini 3 Flash Specs</h4>
+                <ul class="spec-list">
+                  <li><strong>Burndown Rates</strong><span id="spec-tooltip-burndown">1 input = 1 token<br>1 output = 6
+                      tokens</span></li>
+                  <li><strong>Throughput Capacity</strong><span id="spec-tooltip-throughput">2015 tokens / second /
+                      GSU</span></li>
+                  <li><strong>PT Commit Length Pricing</strong><span id="spec-tooltip-pt">1 Week: $4,800/mo<br> 1 Month:
+                      $2,700/mo<br> 3 Month: $2,400/mo<br> 12 Month: $2,000/mo</span></li>
+                  <li><strong>PayGo Standard Rates</strong><span id="spec-tooltip-paygo-std">Input: $0.50 / 1M
+                      tokens<br>Output: $3.00 / 1M tokens</span></li>
+                  <li><strong>PayGo Prio Rates</strong><span id="spec-tooltip-paygo-prio">Input: $0.90 / 1M
+                      tokens<br>Output: $5.40 / 1M tokens</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="controls-row">
+          <label for="cujSelect">Estimation Mode:</label>
+          <div class="model-select-wrapper">
+            <select id="cujSelect" onchange="updateCUJ(this.value)">
+              <option value="cuj2">Normal workload definition</option>
+              <option value="cuj1">Estimate using only tokens per second</option>
+              <option value="cuj3">Quick ballpark</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="quick-ballpark-container">
+          <div id="workload-definition-wrapper">
+            <h2 class="section-title">Query Workload Definition</h2>
+            <div class="glass-panel" style="margin-bottom: 2rem; display: flex; flex-direction: column; gap: 1.5rem;">
+
+              <div>
+                <h3
+                  style="font-size: 0.9rem; color: #475569; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                  Input Modalities</h3>
+                <div class="input-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                  <div class="input-group">
+                    <label>Input Text Tokens</label>
+                    <input type="number" id="wl-text-in" value="1000" step="any">
+                  </div>
+                  <div class="input-group">
+                    <label>Input Images</label>
+                    <input type="number" id="wl-img-in" value="0" step="any">
+                  </div>
+                  <div class="input-group">
+                    <label>Input Audio (sec)</label>
+                    <input type="number" id="wl-aud-in" value="0" step="any">
+                  </div>
+                  <div class="input-group">
+                    <label>Input Video (sec)</label>
+                    <input type="number" id="wl-vid-in" value="0" step="any">
+                  </div>
+                </div>
+              </div>
+
+              <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.05); margin: 0;">
+
+              <div>
+                <h3
+                  style="font-size: 0.9rem; color: #475569; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                  Output Modalities</h3>
+                <div class="input-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                  <div class="input-group">
+                    <label>Output Text Tokens</label>
+                    <input type="number" id="wl-text-out" value="200" step="any">
+                  </div>
+                  <div class="input-group">
+                    <label>Output Images</label>
+                    <input type="number" id="wl-img-out" value="0" step="any">
+                  </div>
+                  <div class="input-group">
+                    <label>Output Video Seconds</label>
+                    <input type="number" id="wl-vid-out" value="0" step="any">
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div id="scenarios-column-wrapper">
+            <h2 class="section-title">Traffic Scenarios</h2>
+            <div class="input-grid">
+
+              <!-- Average Usage -->
+              <div id="avg-scenario-card" class="scenario-card">
+                <h3>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                  </svg>
+                  <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="enable-avg" checked style="width: auto; margin: 0;">
+                    Average Usage
+                  </label>
+                </h3>
+                <div id="avg-qps-wrapper">
+                  <div class="input-group">
+                    <label>Query Per Second (QPS)</label>
+                    <input type="number" id="avg-qps" value="1" step="1">
+                  </div>
+                </div>
+                <div id="avg-tokens-s-inputs" style="display: none;">
+                  <div class="input-group">
+                    <label>Input Tokens/s</label>
+                    <input type="number" id="avg-token-in" value="40000" step="any">
+                  </div>
+                  <div class="input-group">
+                    <label>Output Tokens/s</label>
+                    <input type="number" id="avg-token-out" value="180000" step="any">
+                  </div>
+                </div>
+                <div class="throughput-display">
+                  <span class="throughput-label">Calculated Units/sec</span>
+                  <div class="throughput-value-wrapper">
+                    <span class="tp-value" id="tp-val-avg">0</span>
+                    <span class="tp-unit">units</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Peak Usage -->
+              <div id="peak-scenario-card" class="scenario-card">
+                <h3>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                  </svg>
+                  <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="enable-peak" checked style="width: auto; margin: 0;">
+                    Peak Usage (mean)
+                  </label>
+                </h3>
+                <div id="peak-qps-wrapper">
+                  <div class="input-group">
+                    <label>Query Per Second (QPS)</label>
+                    <input type="number" id="peak-qps" value="2" step="1">
+                  </div>
+                </div>
+                <div id="peak-tokens-s-inputs" style="display: none;">
+                  <div class="input-group">
+                    <label>Input Tokens/s</label>
+                    <input type="number" id="peak-token-in" value="53545" step="any">
+                  </div>
+                  <div class="input-group">
+                    <label>Output Tokens/s</label>
+                    <input type="number" id="peak-token-out" value="240955" step="any">
+                  </div>
+                </div>
+                <div class="input-group">
+                  <label>Average Peak Hours / day</label>
+                  <input type="number" id="peak-hours" value="12" step="any">
+                </div>
+                <div class="throughput-display">
+                  <span class="throughput-label">Calculated Units/sec</span>
+                  <div class="throughput-value-wrapper">
+                    <span class="tp-value" id="tp-val-peak">0</span>
+                    <span class="tp-unit">units</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Low Usage -->
+              <div id="low-scenario-card" class="scenario-card">
+                <h3>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                  </svg>
+                  <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="enable-low" checked style="width: auto; margin: 0;">
+                    Low Usage (mean)
+                  </label>
+                </h3>
+                <div id="low-qps-wrapper">
+                  <div class="input-group">
+                    <label>Query Per Second (QPS)</label>
+                    <input type="number" id="low-qps" value="1" step="1">
+                  </div>
+                </div>
+                <div id="low-tokens-s-inputs" style="display: none;">
+                  <div class="input-group">
+                    <label>Input Tokens/s</label>
+                    <input type="number" id="low-token-in" value="29467" step="any">
+                  </div>
+                  <div class="input-group">
+                    <label>Output Tokens/s</label>
+                    <input type="number" id="low-token-out" value="132600" step="any">
+                  </div>
+                </div>
+                <div class="input-group">
+                  <label>Average Low Hours / day</label>
+                  <input type="number" id="low-hours" value="12" step="any">
+                </div>
+                <div class="throughput-display">
+                  <span class="throughput-label">Calculated Units/sec</span>
+                  <div class="throughput-value-wrapper">
+                    <span class="tp-value" id="tp-val-low">0</span>
+                    <span class="tp-unit">units</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div> <!-- closing scenarios-column-wrapper -->
+        </div> <!-- closing quick-ballpark-container -->
+
+        <div class="action-row">
+          <button class="btn-primary" onclick="switchTab('results')">View Predefined Scenarios</button>
+          <button class="btn-primary" onclick="switchTab('custom')"
+            style="margin-left: 1rem; background: linear-gradient(135deg, #e11d48, #be123c); box-shadow: 0 5px 15px rgba(225, 29, 72, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);">Build
+            Custom Scenario</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Outputs Section (Tab 2) -->
+    <div id="tab-results" class="tab-panel">
+      <div class="results-container" id="results">
+        <div class="glass-panel" style="padding: 1.25rem;">
+          <h2 class="section-title">Strategic Scenarios Overview</h2>
+          <div id="tables-wrapper" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <!-- Tables injected via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Explorer Section (Tab 3) -->
+    <div id="tab-custom" class="tab-panel">
+      <div class="results-container">
+        <div class="glass-panel" style="padding: 1.5rem;">
+          <h2 class="section-title">Interactive Custom Scenario Builder</h2>
+          <p style="color: #475569; font-size: 0.95rem; margin-top: -0.5rem; margin-bottom: 1rem;">Adjust the sliders
+            below to build your own hybrid model based on your configured traffic inputs. Slide to mix Provisioned
+            Throughput baselines with PayGo spillage tiers.</p>
+
+          <p style="color: #475569; font-size: 0.95rem; margin-bottom: 0.5rem;"><strong>Max GSUs required for full peak
+              coverage:</strong> <span id="max-gsu-needed">0</span></p>
+
+          <div class="slider-container">
+            <div class="slider-header">
+              <span class="slider-title">1. Provisioned Throughput Baseline (GSUs)</span>
+              <span class="slider-value-badge" id="badge-gsu">0 GSUs (0 t/s)</span>
+            </div>
+            <input type="range" id="custom-gsu-slider" class="custom-range" min="0" max="100" value="0">
+          </div>
+
+          <div class="slider-container">
+            <div class="slider-header">
+              <span class="slider-title">2. Peak Spillage Mix (PayGo Priority vs Standard)</span>
+              <span class="slider-value-badge" id="badge-mix">50% Prio / 50% Std</span>
+            </div>
+            <input type="range" id="custom-mix-slider" class="custom-range" min="0" max="100" value="50">
+            <div
+              style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem; display: flex; align-items: center; gap: 4px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span>This mix only applies to <strong>spillage</strong> (workload exceeding the PT baseline). If the
+                baseline covers full peak, this slider has no effect.</span>
+            </div>
+          </div>
+
+          <div id="custom-table-wrapper" style="margin-top: 2rem;">
+            <!-- Single Custom Table Injected via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- Readme & Guide Section (Tab 5) -->
+    <div id="tab-readme" class="tab-panel">
+      <div class="results-container">
+        <div class="glass-panel" style="padding: 2rem;">
+          <h2 class="section-title" style="font-size: 1.5rem;">Readme & Usage Guide</h2>
+          <div style="color: #475569; font-size: 1rem; line-height: 1.8;">
+            <p>This tool helps you estimate capacity and costs for Vertex AI Generative AI models across different
+              traffic scenarios (Average, Peak, Low). It allows you to compare PayGo and Provisioned Throughput (PT)
+              options.</p>
+
+            <h3 style="margin-top: 1.5rem;">Estimation Modes:</h3>
+            <ul>
+              <li><strong>Normal workload definition</strong> - Define full workload per query and QPS for different
+                usage tiers.</li>
+              <li><strong>Estimate using only tokens per second</strong> - Locks QPS to 1. Inputs are treated directly
+                as units per second. Good when you already know your throughput requirements.</li>
+              <li><strong>Quick ballpark</strong> - Similar to normal workload definition but simplifies results to 4
+                key comparisons.</li>
+            </ul>
+
+            <h3 style="margin-top: 1.5rem;">Custom Scenarios:</h3>
+            <p>Custom scenarios allow you to explore hybrid cost models by setting a fixed Provisioned Throughput
+              baseline (in GSUs) and using PayGo to cover traffic spikes (spillage). This helps find the most
+              cost-effective balance between commitment and flexibility.</p>
+
+            <h3 style="margin-top: 1.5rem;">Limitations:</h3>
+            <ul>
+              <li>Calculations are estimates and assume steady state traffic within the hours defined.</li>
+              <li>Spillage calculations are based on simplified models and may vary in production.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="glass-panel" style="margin-top: 1.5rem; padding: 2rem;">
+          <h2 class="section-title" style="font-size: 1.5rem;">Important Notes</h2>
+          <div style="color: #475569; font-size: 1rem; line-height: 1.8;">
+            <ul>
+              <li>All Gemini 3 series models listed are currently in Preview. Pricing and availability are subject to
+                change.</li>
+              <li>"N/A" for Priority PayGo on Image models suggests it's not currently offered for those specific model
+                types.</li>
+              <li>Flex PayGo is only supported on the global endpoint.</li>
+              <li>Token counts for images and video/audio are calculated differently than text. Refer to the official
+                Vertex AI pricing page for details.</li>
+              <li>Overage from Provisioned Throughput is typically handled by the Standard PayGo pool and billed at
+                standard rates.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Data & Constants base on spec
+    const MODEL_SPECS = {
+      "gemini-3.1-pro-preview": {
+        model_id: "gemini-3.1-pro-preview",
+        model_family: "Gemini",
+        primary_modality: "Text",
+        pt_unit: "Tokens",
+        throughput_per_gsu: 500,
+        min_gsu_purchase: 1,
+        gsu_purchase_increment: 1,
+        burndown_rates: {
+          standard: { input_text_token: 1, input_image_token: 1, input_video_token: 1, input_audio_token: 1, input_cache_token: 0.1, output_text_token: 6 },
+          long_context: { input_text_token: 2, input_image_token: 2, input_video_token: 2, input_audio_token: 2, input_cache_token: 0.2, output_text_token: 9 }
+        },
+        ptPrices: { w1: 1200, m1: 2700, m3: 2400, m12: 2000 },
+        paygoStd: { in: 2.0, out: 12.0, in_long: 4.0, out_long: 18.0 },
+        paygoFlex: { in: 1.0, out: 6.0, in_long: 2.0, out_long: 9.0 },
+        paygoPrio: { in: 3.6, out: 21.6, in_long: 7.2, out_long: 32.4 }
+      },
+      "gemini-3.1-flash-lite-preview": {
+        model_id: "gemini-3.1-flash-lite-preview",
+        model_family: "Gemini",
+        primary_modality: "Text",
+        pt_unit: "Tokens",
+        throughput_per_gsu: 4030,
+        min_gsu_purchase: 1,
+        gsu_purchase_increment: 1,
+        burndown_rates: {
+          standard: { input_text_token: 1, input_image_token: 1, input_video_token: 1, input_audio_token: 2, input_cache_token: 0.1, output_text_token: 6 },
+          long_context: { input_text_token: 1, input_image_token: 1, input_video_token: 1, input_audio_token: 2, input_cache_token: 0.1, output_text_token: 6 }
+        },
+        ptPrices: { w1: 1200, m1: 2700, m3: 2400, m12: 2000 },
+        paygoStd: { in: 0.25, out: 1.5 }, // Placeholder/Estimate
+        paygoFlex: { in: 0.125, out: 0.75 }, // Placeholder/Estimate
+        paygoPrio: null
+      },
+      "gemini-3-flash-preview": {
+        model_id: "gemini-3-flash-preview",
+        model_family: "Gemini",
+        primary_modality: "Text",
+        pt_unit: "Tokens",
+        throughput_per_gsu: 2015,
+        min_gsu_purchase: 1,
+        gsu_purchase_increment: 1,
+        burndown_rates: {
+          standard: { input_text_token: 1, input_image_token: 1, input_video_token: 1, input_audio_token: 2, input_cache_token: 0.1, output_text_token: 6 },
+          long_context: { input_text_token: 1, input_image_token: 1, input_video_token: 1, input_audio_token: 2, input_cache_token: 0.1, output_text_token: 6 }
+        },
+        ptPrices: { w1: 1200, m1: 2700, m3: 2400, m12: 2000 },
+        paygoStd: { in: 0.5, out: 3.0, in_audio: 1.0 },
+        paygoFlex: { in: 0.25, out: 1.5, in_audio: 0.5 },
+        paygoPrio: { in: 0.9, out: 5.4, in_audio: 1.8 }
+      },
+      "gemini-2.5-pro": {
+        model_id: "gemini-2.5-pro",
+        model_family: "Gemini",
+        primary_modality: "Text",
+        pt_unit: "Tokens",
+        throughput_per_gsu: 650,
+        min_gsu_purchase: 1,
+        gsu_purchase_increment: 1,
+        burndown_rates: {
+          standard: { input_text_token: 1, input_image_token: 1, input_video_token: 1, input_audio_token: 1, output_text_token: 8 },
+          long_context: { input_text_token: 2, input_image_token: 2, input_video_token: 2, input_audio_token: 2, output_text_token: 12 }
+        },
+        ptPrices: { w1: 1200, m1: 2700, m3: 2400, m12: 2000 },
+        paygoStd: { in: 1.25, out: 10.0, in_long: 2.5, out_long: 15.0 },
+        paygoFlex: { in: 0.625, out: 5.0, in_long: 1.25, out_long: 7.5 },
+        paygoPrio: { in: 2.25, out: 18.0, in_long: 4.5, out_long: 27.0 }
+      },
+      "gemini-2.5-flash-image": {
+        model_id: "gemini-2.5-flash-image",
+        model_family: "Gemini",
+        primary_modality: "Image",
+        pt_unit: "Tokens",
+        throughput_per_gsu: 2690,
+        min_gsu_purchase: 1,
+        gsu_purchase_increment: 1,
+        burndown_rates: {
+          standard: { input_text_token: 1, input_image_token: 1, output_text_token: 9, output_image_token: 100 },
+          long_context: { input_text_token: 1, input_image_token: 1, output_text_token: 9, output_image_token: 100 }
+        },
+        ptPrices: { w1: 1200, m1: 2700, m3: 2400, m12: 2000 },
+        paygoStd: { in: 0.30, out: 2.50, img_out: 30.0 },
+        paygoFlex: { in: 0.15, out: 1.25, img_out: 15.0 },
+        paygoPrio: null
+      },
+      "gemini-2.5-flash": {
+        model_id: "gemini-2.5-flash",
+        model_family: "Gemini",
+        primary_modality: "Text",
+        pt_unit: "Tokens",
+        throughput_per_gsu: 2690,
+        min_gsu_purchase: 1,
+        gsu_purchase_increment: 1,
+        burndown_rates: {
+          standard: { input_text_token: 1, input_image_token: 1, input_video_token: 1, input_audio_token: 4, output_text_token: 9 },
+          long_context: { input_text_token: 1, input_image_token: 1, input_video_token: 1, input_audio_token: 4, output_text_token: 9 }
+        },
+        ptPrices: { w1: 1200, m1: 2700, m3: 2400, m12: 2000 },
+        paygoStd: { in: 0.30, out: 2.50, in_audio: 1.0 },
+        paygoFlex: { in: 0.15, out: 1.25, in_audio: 0.5 },
+        paygoPrio: { in: 0.54, out: 4.50, in_audio: 1.80 }
+      },
+      "gemini-3.1-flash-image-preview": {
+        model_id: "gemini-3.1-flash-image-preview",
+        model_family: "Gemini",
+        primary_modality: "Image",
+        pt_unit: "Tokens",
+        throughput_per_gsu: 2015,
+        min_gsu_purchase: 1,
+        gsu_purchase_increment: 1,
+        burndown_rates: {
+          standard: { input_text_token: 1, input_image_token: 1, output_text_token: 6, output_image_token: 120 },
+          long_context: { input_text_token: 1, input_image_token: 1, output_text_token: 6, output_image_token: 120 }
+        },
+        ptPrices: { w1: 1200, m1: 2700, m3: 2400, m12: 2000 },
+        paygoStd: { in: 0.50, out: 3.00, img_out: 60.0 },
+        paygoFlex: { in: 0.25, out: 1.50, img_out: 30.0 },
+        paygoPrio: null
+      },
+      "gemini-3-pro-image-preview": {
+        model_id: "gemini-3-pro-image-preview",
+        model_family: "Gemini",
+        primary_modality: "Image",
+        pt_unit: "Tokens",
+        throughput_per_gsu: 500,
+        min_gsu_purchase: 1,
+        gsu_purchase_increment: 1,
+        burndown_rates: {
+          standard: { input_text_token: 1, input_image_token: 1, output_text_token: 6, output_thinking_token: 6, output_image_token: 60 },
+          long_context: { input_text_token: 1, input_image_token: 1, output_text_token: 6, output_thinking_token: 6, output_image_token: 60 }
+        },
+        ptPrices: { w1: 1200, m1: 2700, m3: 2400, m12: 2000 },
+        paygoStd: { in: 2.0, out: 12.0, img_out: 120.0 },
+        paygoFlex: { in: 1.0, out: 6.0, img_out: 60.0 },
+        paygoPrio: null
+      },
+      "veo-3.1-generate-001": {
+        model_id: "veo-3.1-generate-001",
+        model_family: "Veo",
+        primary_modality: "Video",
+        pt_unit: "Video seconds",
+        throughput_per_gsu: 0.004,
+        min_gsu_purchase: 1,
+        gsu_purchase_increment: 1,
+        burndown_rates: {
+          standard: { output_video_second: 1, output_video_audio_second: 2 },
+          long_context: { output_video_second: 1, output_video_audio_second: 2 }
+        },
+        ptPrices: { w1: 1200, m1: 2700, m3: 2400, m12: 2000 },
+        paygoStd: { video_only_720p_1080p: 0.20, video_audio_720p_1080p: 0.40, video_only_4k: 0.40, video_audio_4k: 0.60 },
+        paygoFlex: null,
+        paygoPrio: null
+      },
+      "veo-3.1-fast-generate-001": {
+        model_id: "veo-3.1-fast-generate-001",
+        model_family: "Veo",
+        primary_modality: "Video",
+        pt_unit: "Video seconds",
+        throughput_per_gsu: 0.01,
+        min_gsu_purchase: 1,
+        gsu_purchase_increment: 1,
+        burndown_rates: {
+          standard: { output_video_second: 1, output_video_audio_second: 1.30 },
+          long_context: { output_video_second: 1, output_video_audio_second: 1.30 }
+        },
+        ptPrices: { w1: 1200, m1: 2700, m3: 2400, m12: 2000 },
+        paygoStd: {
+          video_only_720p: 0.08, video_audio_720p: 0.10,
+          video_only_1080p: 0.10, video_audio_1080p: 0.12,
+          video_only_4k: 0.25, video_audio_4k: 0.30
+        },
+        paygoFlex: null,
+        paygoPrio: null
+      },
+      "veo-3.1-lite": {
+        model_id: "veo-3.1-lite",
+        model_family: "Veo",
+        primary_modality: "Video",
+        pt_unit: "Video seconds",
+        throughput_per_gsu: 0, // PayGo only
+        min_gsu_purchase: 0,
+        gsu_purchase_increment: 0,
+        burndown_rates: null,
+        ptPrices: null,
+        paygoStd: {
+          video_only_720p: 0.03, video_audio_720p: 0.05,
+          video_only_1080p: 0.05, video_audio_1080p: 0.08
+        },
+        paygoFlex: null,
+        paygoPrio: null
+      }
+    };
+
+
+    let currentModelId = "gemini-3.1-pro-preview";
+    let currentCuj = "cuj2";
+    let PT_PRICES = MODEL_SPECS[currentModelId].ptPrices;
+    let PAYGO_STD = MODEL_SPECS[currentModelId].paygoStd;
+    let PAYGO_PRIO = MODEL_SPECS[currentModelId].paygoPrio;
+    let THROUGHPUT_PER_GSU = MODEL_SPECS[currentModelId].throughput_per_gsu;
+
+    function updateModelSpecs(modelId) {
+      if (!MODEL_SPECS[modelId]) return;
+      currentModelId = modelId;
+      PT_PRICES = MODEL_SPECS[modelId].ptPrices;
+      PAYGO_STD = MODEL_SPECS[modelId].paygoStd;
+      PAYGO_PRIO = MODEL_SPECS[modelId].paygoPrio;
+      THROUGHPUT_PER_GSU = MODEL_SPECS[modelId].throughput_per_gsu;
+
+      document.getElementById('spec-tooltip-title').innerText = (MODEL_SPECS[modelId].model_id || modelId) + " Specs";
+      document.getElementById('spec-tooltip-burndown').innerText = `Primary Modality: ${MODEL_SPECS[modelId].primary_modality}`;
+
+      const inputsMap = {
+        'wl-text-in': 'input_text_token',
+        'wl-img-in': 'input_image_token',
+        'wl-aud-in': 'input_audio_token',
+        'wl-vid-in': 'input_video_token',
+        'wl-text-out': 'output_text_token',
+        'wl-img-out': 'output_image_token',
+        'wl-vid-out': 'output_video_second'
+      };
+
+      const spec = MODEL_SPECS[modelId];
+
+      function getVisibleInputs(mId) {
+        const outputTextOnly = ['gemini-3.1-pro-preview', 'gemini-3.1-flash-lite-preview', 'gemini-3-flash-preview', 'gemini-2.5-pro', 'gemini-2.5-flash'];
+        const imageModels = ['gemini-2.5-flash-image', 'gemini-3.1-flash-image-preview', 'gemini-3-pro-image-preview'];
+        const veoModels = ['veo-3.1-generate-001', 'veo-3.1-fast-generate-001', 'veo-3.1-lite'];
+
+        if (outputTextOnly.includes(mId)) {
+          return {
+            'wl-text-in': true, 'wl-img-in': true, 'wl-aud-in': true, 'wl-vid-in': true,
+            'wl-text-out': true, 'wl-img-out': false, 'wl-vid-out': false
+          };
+        }
+        if (imageModels.includes(mId)) {
+          return {
+            'wl-text-in': true, 'wl-img-in': true, 'wl-aud-in': false, 'wl-vid-in': false,
+            'wl-text-out': true, 'wl-img-out': true, 'wl-vid-out': false
+          };
+        }
+        if (veoModels.includes(mId)) {
+          return {
+            'wl-text-in': true, 'wl-img-in': true, 'wl-aud-in': false, 'wl-vid-in': false,
+            'wl-text-out': false, 'wl-img-out': false, 'wl-vid-out': true
+          };
+        }
+        return {
+          'wl-text-in': true, 'wl-img-in': true, 'wl-aud-in': true, 'wl-vid-in': true,
+          'wl-text-out': true, 'wl-img-out': true, 'wl-vid-out': true
+        };
+      }
+
+      const visibleInputs = getVisibleInputs(modelId);
+
+      for (const inputId of Object.keys(inputsMap)) {
+        const el = document.getElementById(inputId);
+        if (!el) continue;
+
+        const isVisible = visibleInputs[inputId];
+        const group = el.closest('.input-group');
+
+        if (isVisible) {
+          if (group) group.style.display = 'block';
+          el.disabled = false;
+        } else {
+          if (group) group.style.display = 'none';
+          el.value = 0;
+          el.disabled = true;
+        }
+      }
+      document.getElementById('spec-tooltip-throughput').innerText = `${THROUGHPUT_PER_GSU} units / second / GSU`;
+
+      if (PT_PRICES) {
+        document.getElementById('spec-tooltip-pt').innerHTML = `1 Week: $${PT_PRICES.w1.toLocaleString()}/mo<br> 1 Month: $${PT_PRICES.m1.toLocaleString()}/mo<br> 3 Month: $${PT_PRICES.m3.toLocaleString()}/mo<br> 12 Month: $${PT_PRICES.m12.toLocaleString()}/mo`;
+      } else {
+        document.getElementById('spec-tooltip-pt').innerHTML = "N/A (PayGo only)";
+      }
+
+      if (PAYGO_STD && PAYGO_STD.in !== undefined) {
+        document.getElementById('spec-tooltip-paygo-std').innerHTML = `Input: $${PAYGO_STD.in.toFixed(2)} / 1M tokens<br>Output: $${PAYGO_STD.out.toFixed(2)} / 1M tokens`;
+      } else if (PAYGO_STD) {
+        document.getElementById('spec-tooltip-paygo-std').innerHTML = "Custom pricing (see details)";
+      } else {
+        document.getElementById('spec-tooltip-paygo-std').innerHTML = "N/A";
+      }
+
+      if (PAYGO_PRIO && PAYGO_PRIO.in !== undefined) {
+        document.getElementById('spec-tooltip-paygo-prio').innerHTML = `Input: $${PAYGO_PRIO.in.toFixed(2)} / 1M tokens<br>Output: $${PAYGO_PRIO.out.toFixed(2)} / 1M tokens`;
+      } else {
+        document.getElementById('spec-tooltip-paygo-prio').innerHTML = "N/A";
+      }
+
+      calculate();
+    }
+
+    function updateCUJ(cujId) {
+      currentCuj = cujId;
+
+      const stdWlDef = document.getElementById('workload-definition-wrapper');
+      const tokensSInputs = ['avg-tokens-s-inputs', 'peak-tokens-s-inputs', 'low-tokens-s-inputs'];
+      const qpsWrappers = ['avg-qps-wrapper', 'peak-qps-wrapper', 'low-qps-wrapper'];
+      const peakCard = document.getElementById('peak-scenario-card');
+      const lowCard = document.getElementById('low-scenario-card');
+      const ballparkContainer = document.getElementById('quick-ballpark-container');
+
+      // Handle section visibility
+      if (currentCuj === 'cuj1') {
+        if (stdWlDef) stdWlDef.style.display = 'none';
+      } else {
+        if (stdWlDef) stdWlDef.style.display = 'flex';
+      }
+
+      // Toggle layout class for Quick Ballpark
+      if (currentCuj === 'cuj3') {
+        if (ballparkContainer) ballparkContainer.classList.add('cuj3-layout');
+      } else {
+        if (ballparkContainer) ballparkContainer.classList.remove('cuj3-layout');
+      }
+
+      // Handle inputs visibility in cards
+      if (currentCuj === 'cuj1') {
+        tokensSInputs.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'block';
+        });
+        qpsWrappers.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        });
+      } else {
+        tokensSInputs.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        });
+        qpsWrappers.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'block';
+        });
+      }
+
+      // Handle card visibility (CUJ3 hides Peak and Low)
+      if (currentCuj === 'cuj3') {
+        if (peakCard) peakCard.style.display = 'none';
+        if (lowCard) lowCard.style.display = 'none';
+      } else {
+        if (peakCard) peakCard.style.display = 'block';
+        if (lowCard) lowCard.style.display = 'block';
+      }
+
+      // Rename Average Usage card for CUJ3
+      const avgLabel = document.querySelector('#avg-scenario-card h3 label');
+      if (currentCuj === 'cuj3') {
+        if (avgLabel) {
+          avgLabel.innerHTML = '<input type="checkbox" id="enable-avg" checked style="width: auto; margin: 0;"> Usage Profile';
+        }
+      } else {
+        if (avgLabel) {
+          avgLabel.innerHTML = '<input type="checkbox" id="enable-avg" checked style="width: auto; margin: 0;"> Average Usage';
+        }
+      }
+
+      calculate();
+    }
+
+    const DAYS_PER_MONTH = 30;
+
+    function formatUSD(num) {
+      if (typeof num !== 'number') return num;
+      // Using a wrapper format for prices that might be negative to keep the minus visible nicely
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+    }
+
+    function formatUSDHighlight(num) {
+      if (typeof num !== 'number') return num;
+      return `<span class="highlight-price">${formatUSD(num)}</span>`;
+    }
+
+    function formatNum(num) {
+      // Force US locale to ensure periods for decimals
+      return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(num);
+    }
+
+    function calculateIntTokensForH(rate_tokens_s, hours) {
+      const amount = Math.round(rate_tokens_s);
+      return amount * 3600 * hours * DAYS_PER_MONTH;
+    }
+
+    function calcPaygoPrice(val_s, hours, rate_per_M) {
+      const totalTokens = calculateIntTokensForH(val_s, hours);
+      return (totalTokens / 1000000) * rate_per_M;
+    }
+
+    function getPaygoCost(modelId, inSpill, outSpill, hours, tier) {
+      const spec = MODEL_SPECS[modelId];
+      let pricing = spec.paygoStd;
+      if (tier === 'flex') pricing = spec.paygoFlex;
+      if (tier === 'priority') pricing = spec.paygoPrio;
+
+      if (!pricing) return 0;
+
+      if (spec.model_family === 'Veo') {
+        const rate = pricing.video_only_720p || pricing.video_720p_1080p || 0;
+        const totalSeconds = outSpill * 3600 * hours * DAYS_PER_MONTH;
+        return totalSeconds * rate;
+      }
+
+      let inCost = 0;
+      let outCost = 0;
+
+      if (pricing.in !== undefined) {
+        inCost = calcPaygoPrice(inSpill, hours, pricing.in);
+      }
+      if (pricing.out !== undefined) {
+        outCost = calcPaygoPrice(outSpill, hours, pricing.out);
+      }
+
+      return inCost + outCost;
+    }
+
+    function createTableHTML(title, colorClass, rows, includeColumns = true) {
+      // Extract the exact letter (e.g. "A") and the rest of the text from "A: Some text"
+      const colonIndex = title.indexOf(':');
+      let badge = '';
+      let restOfTitle = title;
+      if (colonIndex !== -1) {
+        badge = title.substring(0, colonIndex).trim();
+        restOfTitle = title.substring(colonIndex + 1).trim();
+      }
+
+      let html = `<div class="scenario-table-container ${colorClass}">`;
+      html += `<div class="scenario-title">`;
+      if (badge) html += `<span class="scenario-badge">${badge}</span>`;
+      html += `<span>${restOfTitle}</span>`;
+      html += `</div>`;
+
+      html += `<table>`;
+
+      if (includeColumns) {
+        html += `
+                    <thead>
+                        <tr>
+                            <th>Cost Component</th>
+                            <th>Throughput/s</th>
+                            <th>GSUs</th>
+                            <th>1 Week Commit<br><span style="font-size:0.75rem; color:#64748b">(monthly price)</span></th>
+                            <th>1 Month Commit</th>
+                            <th>3 Month Commit</th>
+                            <th>12 Month Commit</th>
+                        </tr>
+                    </thead>
+                `;
+      }
+      html += `<tbody>`;
+      rows.forEach(r => {
+        html += `<tr class="${r.bold ? 'bold-row' : ''}">`;
+        html += `<td>${r.c1 || ''}</td>`;
+        html += `<td>${r.c2 !== undefined ? r.c2 : ''}</td>`;
+        html += `<td>${r.c3 !== undefined ? r.c3 : ''}</td>`;
+        html += `<td>${r.c4 !== undefined ? r.c4 : ''}</td>`;
+        html += `<td>${r.c5 !== undefined ? r.c5 : ''}</td>`;
+        html += `<td>${r.c6 !== undefined ? r.c6 : ''}</td>`;
+        html += `<td>${r.c7 !== undefined ? r.c7 : ''}</td>`;
+        html += `</tr>`;
+      });
+      html += `</tbody></table></div>`;
+      return html;
+    }
+
+    // Helper to compute PT
+    // Helper to compute PT
+    const calcPT = (tIn, tOut) => {
+      const tp = tIn + tOut; // Factored in units
+      let GSUs = Math.ceil(tp / THROUGHPUT_PER_GSU);
+      const prices = PT_PRICES || { w1: 0, m1: 0, m3: 0, m12: 0 };
+      return {
+        tp: tp,
+        gsus: GSUs,
+        price_w1: GSUs * prices.w1,
+        price_m1: GSUs * prices.m1,
+        price_m3: GSUs * prices.m3,
+        price_m12: GSUs * prices.m12
+      };
+    };
+
+    function calculate() {
+      // Read Workload Profile
+      const wl = {
+        textIn: parseFloat(document.getElementById('wl-text-in').value) || 0,
+        imgIn: parseFloat(document.getElementById('wl-img-in').value) || 0,
+        audIn: parseFloat(document.getElementById('wl-aud-in').value) || 0,
+        vidIn: parseFloat(document.getElementById('wl-vid-in').value) || 0,
+        textOut: parseFloat(document.getElementById('wl-text-out').value) || 0,
+        imgOut: parseFloat(document.getElementById('wl-img-out').value) || 0,
+        vidOut: parseFloat(document.getElementById('wl-vid-out').value) || 0
+      };
+
+      const qps = {
+        avg: parseFloat(document.getElementById('avg-qps').value) || 0,
+        peak: parseFloat(document.getElementById('peak-qps').value) || 0,
+        low: parseFloat(document.getElementById('low-qps').value) || 0
+      };
+
+      const hours = {
+        peak: parseFloat(document.getElementById('peak-hours').value) || 0,
+        low: parseFloat(document.getElementById('low-hours').value) || 0
+      };
+
+      const enabled = {
+        avg: document.getElementById('enable-avg').checked,
+        peak: document.getElementById('enable-peak').checked,
+        low: document.getElementById('enable-low').checked
+      };
+
+      // Dynamic Rate Selection
+      const totalInputTokens = wl.textIn + (wl.imgIn * 1) + (wl.vidIn * 1) + (wl.audIn * 1); // rough sum
+      const spec = MODEL_SPECS[currentModelId];
+      let br = spec.burndown_rates.standard;
+      if (totalInputTokens > 200000 && spec.burndown_rates.long_context) {
+        br = spec.burndown_rates.long_context;
+      }
+
+      let inputs = {
+        avg: { in: 0, out: 0 },
+        peak: { in: 0, out: 0, hours: hours.peak },
+        low: { in: 0, out: 0, hours: hours.low }
+      };
+
+      if (currentCuj === 'cuj1') {
+        const avgIn = parseFloat(document.getElementById('avg-token-in').value) || 0;
+        const avgOut = parseFloat(document.getElementById('avg-token-out').value) || 0;
+        const peakIn = parseFloat(document.getElementById('peak-token-in').value) || 0;
+        const peakOut = parseFloat(document.getElementById('peak-token-out').value) || 0;
+        const lowIn = parseFloat(document.getElementById('low-token-in').value) || 0;
+        const lowOut = parseFloat(document.getElementById('low-token-out').value) || 0;
+
+        inputs.avg.in = avgIn * (br.input_text_token || 1);
+        inputs.avg.out = avgOut * (br.output_text_token || 1);
+        inputs.peak.in = peakIn * (br.input_text_token || 1);
+        inputs.peak.out = peakOut * (br.output_text_token || 1);
+        inputs.low.in = lowIn * (br.input_text_token || 1);
+        inputs.low.out = lowOut * (br.output_text_token || 1);
+
+        if (!enabled.avg) { inputs.avg.in = 0; inputs.avg.out = 0; }
+        if (!enabled.peak) { inputs.peak.in = 0; inputs.peak.out = 0; }
+        if (!enabled.low) { inputs.low.in = 0; inputs.low.out = 0; }
+      } else {
+        // Calculate units per query
+        let inUnitsPerQuery = 0;
+        let outUnitsPerQuery = 0;
+
+        if (spec.model_family === 'Veo') {
+          outUnitsPerQuery = (wl.vidOut * br.output_video_second); // Simplified
+        } else {
+          inUnitsPerQuery = (wl.textIn * (br.input_text_token || 0)) +
+            (wl.imgIn * (br.input_image_token || 0)) +
+            (wl.vidIn * (br.input_video_token || 0)) +
+            (wl.audIn * (br.input_audio_token || 0));
+          outUnitsPerQuery = (wl.textOut * (br.output_text_token || 0)) +
+            (wl.imgOut * (br.output_image_token || 0));
+        }
+
+        inputs.avg = { in: inUnitsPerQuery * (enabled.avg ? qps.avg : 0), out: outUnitsPerQuery * (enabled.avg ? qps.avg : 0) };
+        inputs.peak = { in: inUnitsPerQuery * (enabled.peak ? qps.peak : 0), out: outUnitsPerQuery * (enabled.peak ? qps.peak : 0), hours: hours.peak };
+        inputs.low = { in: inUnitsPerQuery * (enabled.low ? qps.low : 0), out: outUnitsPerQuery * (enabled.low ? qps.low : 0), hours: hours.low };
+      }
+
+      // Recalculate and display the live throughput values in the scenario cards
+      const ptA = calcPT(inputs.avg.in, inputs.avg.out);
+      const ptPeak = calcPT(inputs.peak.in, inputs.peak.out);
+      const ptLow = calcPT(inputs.low.in, inputs.low.out);
+
+      document.getElementById('tp-val-avg').innerText = formatNum(ptA.tp);
+      document.getElementById('tp-val-peak').innerText = formatNum(ptPeak.tp);
+      document.getElementById('tp-val-low').innerText = formatNum(ptLow.tp);
+
+      const resultsHtml = [];
+      const unitLabel = currentCuj === 'cuj1' ? 'tokens/s' : 'units/s';
+
+      // Spillage Calculations
+      let spillA_in = Math.max(0, Math.round(inputs.peak.in) - Math.round(inputs.avg.in));
+      let spillA_out = Math.max(0, Math.round(inputs.peak.out) - Math.round(inputs.avg.out));
+
+      // Custom Slider Logic setup
+      const max_tp = Math.max(
+        inputs.avg.in + inputs.avg.out,
+        inputs.peak.in + inputs.peak.out,
+        inputs.low.in + inputs.low.out
+      );
+      const maxGsus = Math.ceil(max_tp / THROUGHPUT_PER_GSU);
+
+      const maxGsuSpan = document.getElementById('max-gsu-needed');
+      if (maxGsuSpan) {
+        maxGsuSpan.innerText = maxGsus;
+      }
+
+      const slider = document.getElementById('custom-gsu-slider');
+      if (slider) {
+        const newMax = Math.max(1, maxGsus);
+        slider.max = newMax;
+        slider.setAttribute('max', newMax);
+        console.log("CapacityPlanner Debug - Setting slider.max to:", newMax);
+        calculateCustom();
+      }
+
+      if (currentCuj === 'cuj3') {
+        const costStd = getPaygoCost(currentModelId, inputs.avg.in, inputs.avg.out, 24, 'standard');
+        const costPrio = getPaygoCost(currentModelId, inputs.avg.in, inputs.avg.out, 24, 'priority');
+
+        const prices = PT_PRICES || { w1: 0, m1: 0, m3: 0, m12: 0 };
+        const pt1w = ptA.gsus * prices.w1;
+        const pt1m = ptA.gsus * prices.m1;
+        const pt3m = ptA.gsus * prices.m3;
+        const pt12m = ptA.gsus * prices.m12;
+
+        const rows = [
+          { c1: "Full PayGo Standard (24h)", c2: formatNum(ptA.tp) + " " + unitLabel, c3: "-", c4: formatUSD(costStd), c5: formatUSD(costStd), c6: formatUSD(costStd), c7: formatUSD(costStd), bold: true },
+          { c1: "Full PayGo Priority (24h)", c2: formatNum(ptA.tp) + " " + unitLabel, c3: "-", c4: formatUSD(costPrio), c5: formatUSD(costPrio), c6: formatUSD(costPrio), c7: formatUSD(costPrio), bold: true },
+          { c1: `Full Provisioned Throughput (${ptA.gsus} GSUs)`, c2: formatNum(ptA.tp) + " " + unitLabel, c3: ptA.gsus, c4: formatUSD(pt1w), c5: formatUSD(pt1m), c6: formatUSD(pt3m), c7: formatUSD(pt12m), bold: true }
+        ];
+
+        resultsHtml.push(createTableHTML("Suggestions for Quick Ballpark", "color-custom", rows));
+        document.getElementById("tables-wrapper").innerHTML = resultsHtml.join('');
+        return;
+      }
+
+      if (enabled.avg) {
+        // SCENARIO A
+        let paygoA_tot = getPaygoCost(currentModelId, spillA_in, spillA_out, inputs.peak.hours, 'priority');
+        let paygoA_in = paygoA_tot * (spillA_in / (spillA_in + spillA_out || 1)); // Rough split for display
+        let paygoA_out = paygoA_tot - paygoA_in;
+
+        resultsHtml.push(createTableHTML(
+          "A: Balanced Hybrid (PT for Average, Prio for Peak)", "color-a",
+          [
+            { c1: "PT for Average Usage", c2: formatNum(ptA.tp), c3: ptA.gsus, c4: formatUSD(ptA.price_w1), c5: formatUSD(ptA.price_m1), c6: formatUSD(ptA.price_m3), c7: formatUSD(ptA.price_m12) },
+            { c1: `PayGo Prio for the Peak for ~${inputs.peak.hours}h:`, c2: "<strong>Spillage:</strong>", bold: false },
+            { c1: "", c2: `input ${unitLabel} peak`, c3: formatNum(spillA_in), c4: formatUSD(paygoA_in), c5: formatUSD(paygoA_tot), c6: formatUSD(paygoA_tot), c7: formatUSD(paygoA_tot) },
+            { c1: "", c2: `output ${unitLabel} peak`, c3: formatNum(spillA_out), c4: formatUSD(paygoA_out) },
+            { c1: "", c3: "", c4: "<strong>" + formatUSD(paygoA_tot) + "</strong>" },
+            { c1: "", c2: "Total Monthly", bold: true, c4: formatUSDHighlight(ptA.price_w1 + paygoA_tot), c5: formatUSDHighlight(ptA.price_m1 + paygoA_tot), c6: formatUSDHighlight(ptA.price_m3 + paygoA_tot), c7: formatUSDHighlight(ptA.price_m12 + paygoA_tot) }
+          ]
+        ));
+
+        // SCENARIO B
+        if (currentCuj !== 'cuj3') {
+          let paygoB_tot = getPaygoCost(currentModelId, spillA_in, spillA_out, inputs.peak.hours, 'standard');
+          let paygoB_in = paygoB_tot * (spillA_in / (spillA_in + spillA_out || 1));
+          let paygoB_out = paygoB_tot - paygoB_in;
+
+          resultsHtml.push(createTableHTML(
+            "B: Cost-Effective Hybrid (PT for Average, Std for Peak)", "color-b",
+            [
+              { c1: "PT for Average Usage", c2: formatNum(ptA.tp), c3: ptA.gsus, c4: formatUSD(ptA.price_w1), c5: formatUSD(ptA.price_m1), c6: formatUSD(ptA.price_m3), c7: formatUSD(ptA.price_m12) },
+              { c1: `PayGo Standard for the Peak for ~${inputs.peak.hours}h:`, c2: "<strong>Spillage:</strong>", bold: false },
+              { c1: "", c2: `input ${unitLabel} peak`, c3: formatNum(spillA_in), c4: formatUSD(paygoB_in), c5: formatUSD(paygoB_tot), c6: formatUSD(paygoB_tot), c7: formatUSD(paygoB_tot) },
+              { c1: "", c2: `output ${unitLabel} peak`, c3: formatNum(spillA_out), c4: formatUSD(paygoB_out) },
+              { c1: "", c3: "", c4: "<strong>" + formatUSD(paygoB_tot) + "</strong>" },
+              { c1: "", c2: "Total Monthly", bold: true, c4: formatUSDHighlight(ptA.price_w1 + paygoB_tot), c5: formatUSDHighlight(ptA.price_m1 + paygoB_tot), c6: formatUSDHighlight(ptA.price_m3 + paygoB_tot), c7: formatUSDHighlight(ptA.price_m12 + paygoB_tot) }
+            ]
+          ));
+        }
+      }
+
+      if (enabled.low && currentCuj !== 'cuj3') {
+        // SCENARIO C
+        let spillLow_in = Math.max(0, Math.round(inputs.peak.in) - Math.round(inputs.low.in));
+        let spillLow_out = Math.max(0, Math.round(inputs.peak.out) - Math.round(inputs.low.out));
+
+        let paygoC_tot = getPaygoCost(currentModelId, spillLow_in, spillLow_out, inputs.peak.hours, 'priority');
+        let paygoC_in = paygoC_tot * (spillLow_in / (spillLow_in + spillLow_out || 1));
+        let paygoC_out = paygoC_tot - paygoC_in;
+
+        resultsHtml.push(createTableHTML(
+          "C: Conservative Hybrid (PT for Low, Prio for Peak)", "color-c",
+          [
+            { c1: "PT for Low Usage", c2: formatNum(ptLow.tp), c3: ptLow.gsus, c4: formatUSD(ptLow.price_w1), c5: formatUSD(ptLow.price_m1), c6: formatUSD(ptLow.price_m3), c7: formatUSD(ptLow.price_m12) },
+            { c1: `PayGo Prio for the Peak for ${inputs.peak.hours}h:`, c2: "<strong>Spillage:</strong>" },
+            { c1: "", c2: `input ${unitLabel} peak`, c3: formatNum(spillLow_in), c4: formatUSD(paygoC_in), c5: formatUSD(paygoC_tot), c6: formatUSD(paygoC_tot), c7: formatUSD(paygoC_tot) },
+            { c1: "", c2: `output ${unitLabel} peak`, c3: formatNum(spillLow_out), c4: "<strong>" + formatUSD(paygoC_out) + "</strong>" },
+            { c1: "", c3: "", c4: "<strong>" + formatUSD(paygoC_tot) + "</strong>" },
+            { c1: "", c2: "Total Monthly", bold: true, c4: formatUSDHighlight(ptLow.price_w1 + paygoC_tot), c5: formatUSDHighlight(ptLow.price_m1 + paygoC_tot), c6: formatUSDHighlight(ptLow.price_m3 + paygoC_tot), c7: formatUSDHighlight(ptLow.price_m12 + paygoC_tot) }
+          ]
+        ));
+
+        // SCENARIO D
+        let paygoD_tot = getPaygoCost(currentModelId, spillLow_in, spillLow_out, inputs.peak.hours, 'standard');
+        let paygoD_in = paygoD_tot * (spillLow_in / (spillLow_in + spillLow_out || 1));
+        let paygoD_out = paygoD_tot - paygoD_in;
+
+        resultsHtml.push(createTableHTML(
+          "D: Max Savings Hybrid (PT for Low, Std for Peak)", "color-d",
+          [
+            { c1: "PT for Low Usage", c2: formatNum(ptLow.tp), c3: ptLow.gsus, c4: formatUSD(ptLow.price_w1), c5: formatUSD(ptLow.price_m1), c6: formatUSD(ptLow.price_m3), c7: formatUSD(ptLow.price_m12) },
+            { c1: `PayGo Standard for the Peak for ${inputs.peak.hours}h:`, c2: "<strong>Spillage:</strong>" },
+            { c1: "", c2: `input ${unitLabel} peak`, c3: formatNum(spillLow_in), c4: formatUSD(paygoD_in), c5: formatUSD(paygoD_tot), c6: formatUSD(paygoD_tot), c7: formatUSD(paygoD_tot) },
+            { c1: "", c2: `output ${unitLabel} peak`, c3: formatNum(spillLow_out), c4: formatUSD(paygoD_out) },
+            { c1: "", c3: "", c4: "<strong>" + formatUSD(paygoD_tot) + "</strong>" },
+            { c1: "", c2: "Total Monthly", bold: true, c4: formatUSDHighlight(ptLow.price_w1 + paygoD_tot), c5: formatUSDHighlight(ptLow.price_m1 + paygoD_tot), c6: formatUSDHighlight(ptLow.price_m3 + paygoD_tot), c7: formatUSDHighlight(ptLow.price_m12 + paygoD_tot) }
+          ]
+        ));
+
+        // SCENARIO E
+        let spillHalf_in = Math.round(spillLow_in / 2);
+        let spillHalf_out = Math.round(spillLow_out / 2);
+        let halfHours = inputs.peak.hours / 2;
+
+        let paygoE_Prio_tot = getPaygoCost(currentModelId, spillHalf_in, spillHalf_out, inputs.peak.hours, 'priority');
+        let paygoE_Prio_in = paygoE_Prio_tot * (spillHalf_in / (spillHalf_in + spillHalf_out || 1));
+        let paygoE_Prio_out = paygoE_Prio_tot - paygoE_Prio_in;
+
+        let paygoE_Std_tot = getPaygoCost(currentModelId, spillHalf_in, spillHalf_out, inputs.peak.hours, 'standard');
+        let paygoE_Std_in = paygoE_Std_tot * (spillHalf_in / (spillHalf_in + spillHalf_out || 1));
+        let paygoE_Std_out = paygoE_Std_tot - paygoE_Std_in;
+
+        let paygoE_Tot = paygoE_Prio_tot + paygoE_Std_tot;
+
+        resultsHtml.push(createTableHTML(
+          "E: Mixed Hybrid (PT for Low, split Peak)", "color-e",
+          [
+            { c1: "PT for Low Usage", c2: formatNum(ptLow.tp), c3: ptLow.gsus, c4: formatUSD(ptLow.price_w1), c5: formatUSD(ptLow.price_m1), c6: formatUSD(ptLow.price_m3), c7: formatUSD(ptLow.price_m12) },
+            { c1: `PayGo Prio for half time peak (${halfHours}h):`, c2: "<strong>Spillage:</strong>" },
+            { c1: "", c2: `input ${unitLabel} peak`, c3: formatNum(spillHalf_in), c4: formatUSD(paygoE_Prio_in), c5: formatUSD(paygoE_Prio_tot), c6: formatUSD(paygoE_Prio_tot), c7: formatUSD(paygoE_Prio_tot) },
+            { c1: "", c2: `output ${unitLabel} peak`, c3: formatNum(spillHalf_out), c4: formatUSD(paygoE_Prio_out) },
+            { c1: "", c3: "", c4: "<strong>" + formatUSD(paygoE_Prio_tot) + "</strong>" },
+            { c1: `PayGo std for the Peak for half time (${halfHours}h)`, c2: "<strong>Spillage:</strong>" },
+            { c1: "", c2: `input ${unitLabel} peak`, c3: formatNum(spillHalf_in), c4: formatUSD(paygoE_Std_in), c5: formatUSD(paygoE_Std_tot), c6: formatUSD(paygoE_Std_tot), c7: formatUSD(paygoE_Std_tot) },
+            { c1: "", c2: `output ${unitLabel} peak`, c3: formatNum(spillHalf_out), c4: formatUSD(paygoE_Std_out) },
+            { c1: "", c3: "", c4: "<strong>" + formatUSD(paygoE_Std_tot) + "</strong>" },
+            { c1: "", c2: "Total Monthly", bold: true, c4: formatUSDHighlight(ptLow.price_w1 + paygoE_Tot), c5: formatUSDHighlight(ptLow.price_m1 + paygoE_Tot), c6: formatUSDHighlight(ptLow.price_m3 + paygoE_Tot), c7: formatUSDHighlight(ptLow.price_m12 + paygoE_Tot) }
+          ]
+        ));
+      }
+
+      // SCENARIO F
+      let paygoF_PrioPeak_tot = getPaygoCost(currentModelId, inputs.peak.in, inputs.peak.out, inputs.peak.hours, 'priority');
+      let paygoF_PrioLow_tot = getPaygoCost(currentModelId, inputs.low.in, inputs.low.out, inputs.low.hours, 'priority');
+      let paygoF_TotMonth = paygoF_PrioPeak_tot + paygoF_PrioLow_tot;
+
+      resultsHtml.push(createTableHTML(
+        "F: Full PayGo Priority (High Performance, No Commitment)", "color-f",
+        [
+          { c1: `PayGo Priority for ${inputs.peak.hours}h peak`, c2: "Total Cost", c3: "", c4: "<strong>" + formatUSDHighlight(paygoF_PrioPeak_tot) + "</strong>" },
+          { c1: `PayGo Priority for ${inputs.low.hours}h low`, c2: "Total Cost", c3: "", c4: "<strong>" + formatUSDHighlight(paygoF_PrioLow_tot) + "</strong>" },
+          { c1: "", c2: "", c3: "<strong>Total Monthly</strong>", c4: "<strong>" + formatUSDHighlight(paygoF_TotMonth) + "</strong>" }
+        ], false
+      ));
+
+      // SCENARIO G
+      let paygoG_StdPeak_tot = getPaygoCost(currentModelId, inputs.peak.in, inputs.peak.out, inputs.peak.hours, 'standard');
+      let paygoG_StdLow_tot = getPaygoCost(currentModelId, inputs.low.in, inputs.low.out, inputs.low.hours, 'standard');
+      let paygoG_TotMonth = paygoG_StdPeak_tot + paygoG_StdLow_tot;
+
+      resultsHtml.push(createTableHTML(
+        "G: Full PayGo Standard (Lowest Token Cost, No Commitment)", "color-g",
+        [
+          { c1: `PayGo Standard for ${inputs.peak.hours}h peak`, c2: "Total Cost", c3: "", c4: "<strong>" + formatUSDHighlight(paygoG_StdPeak_tot) + "</strong>" },
+          { c1: `PayGo Standard for ${inputs.low.hours}h low`, c2: "Total Cost", c3: "", c4: "<strong>" + formatUSDHighlight(paygoG_StdLow_tot) + "</strong>" },
+          { c1: "", c2: "", c3: "<strong>Total Monthly</strong>", c4: "<strong>" + formatUSDHighlight(paygoG_TotMonth) + "</strong>" }
+        ], false
+      ));
+
+      if (enabled.peak) {
+        // SCENARIO H
+        resultsHtml.push(createTableHTML(
+          "H: Full Provisioned Throughput (Predictable Cost for High Volume)", "color-h",
+          [
+            { c1: "PT for Peak Usage", c2: formatNum(ptPeak.tp), c3: ptPeak.gsus, c4: formatUSD(ptPeak.price_w1), c5: formatUSD(ptPeak.price_m1), c6: formatUSD(ptPeak.price_m3), c7: formatUSD(ptPeak.price_m12) },
+            { c1: "", c2: "Total Monthly", bold: true, c4: formatUSDHighlight(ptPeak.price_w1), c5: formatUSDHighlight(ptPeak.price_m1), c6: formatUSDHighlight(ptPeak.price_m3), c7: formatUSDHighlight(ptPeak.price_m12) }
+          ]
+        ));
+      }
+
+      document.getElementById('tables-wrapper').innerHTML = resultsHtml.join('');
+
+
+    }
+
+    function calculateCustom() {
+      try {
+        const unitLabel = currentCuj === 'cuj1' ? 'tokens/s' : 'units/s';
+        const spec = MODEL_SPECS[currentModelId];
+        let br = spec.burndown_rates.standard;
+
+        let inputs = {
+          avg: { in: 0, out: 0 },
+          peak: { in: 0, out: 0, hours: parseFloat(document.getElementById('peak-hours').value) || 0 },
+          low: { in: 0, out: 0, hours: parseFloat(document.getElementById('low-hours').value) || 0 }
+        };
+
+        if (currentCuj === 'cuj1') {
+          const avgIn = parseFloat(document.getElementById('avg-token-in').value) || 0;
+          const avgOut = parseFloat(document.getElementById('avg-token-out').value) || 0;
+          const peakIn = parseFloat(document.getElementById('peak-token-in').value) || 0;
+          const peakOut = parseFloat(document.getElementById('peak-token-out').value) || 0;
+          const lowIn = parseFloat(document.getElementById('low-token-in').value) || 0;
+          const lowOut = parseFloat(document.getElementById('low-token-out').value) || 0;
+
+          inputs.avg.in = avgIn * (br.input_text_token || 1);
+          inputs.avg.out = avgOut * (br.output_text_token || 1);
+          inputs.peak.in = peakIn * (br.input_text_token || 1);
+          inputs.peak.out = peakOut * (br.output_text_token || 1);
+          inputs.low.in = lowIn * (br.input_text_token || 1);
+          inputs.low.out = lowOut * (br.output_text_token || 1);
+        } else {
+          const wl = {
+            textIn: parseFloat(document.getElementById('wl-text-in').value) || 0,
+            imgIn: parseFloat(document.getElementById('wl-img-in').value) || 0,
+            audIn: parseFloat(document.getElementById('wl-aud-in').value) || 0,
+            vidIn: parseFloat(document.getElementById('wl-vid-in').value) || 0,
+            textOut: parseFloat(document.getElementById('wl-text-out').value) || 0,
+            imgOut: parseFloat(document.getElementById('wl-img-out').value) || 0,
+            vidOut: parseFloat(document.getElementById('wl-vid-out').value) || 0
+          };
+
+          const qps = {
+            avg: parseFloat(document.getElementById('avg-qps').value) || 0,
+            peak: parseFloat(document.getElementById('peak-qps').value) || 0,
+            low: parseFloat(document.getElementById('low-qps').value) || 0
+          };
+
+          let inUnitsPerQuery = 0;
+          let outUnitsPerQuery = 0;
+
+          if (spec.model_family === 'Veo') {
+            outUnitsPerQuery = wl.vidOut * br.output_video_second;
+          } else {
+            inUnitsPerQuery = (wl.textIn * (br.input_text_token || 0)) +
+              (wl.imgIn * (br.input_image_token || 0)) +
+              (wl.vidIn * (br.input_video_token || 0)) +
+              (wl.audIn * (br.input_audio_token || 0));
+            outUnitsPerQuery = (wl.textOut * (br.output_text_token || 0)) +
+              (wl.imgOut * (br.output_image_token || 0));
+          }
+
+          inputs.avg.in = inUnitsPerQuery * qps.avg;
+          inputs.avg.out = outUnitsPerQuery * qps.avg;
+          inputs.peak.in = inUnitsPerQuery * qps.peak;
+          inputs.peak.out = outUnitsPerQuery * qps.peak;
+          inputs.low.in = inUnitsPerQuery * qps.low;
+          inputs.low.out = outUnitsPerQuery * qps.low;
+        }
+
+        const avg_tp = inputs.avg.in + inputs.avg.out;
+        const peak_tp = inputs.peak.in + inputs.peak.out;
+        const low_tp = inputs.low.in + inputs.low.out;
+
+        const max_tp = Math.max(avg_tp, peak_tp, low_tp);
+
+        const gsuSlider = document.getElementById('custom-gsu-slider');
+        const mixSlider = document.getElementById('custom-mix-slider');
+
+        const chosenGsus = parseInt(gsuSlider.value);
+        const pt_tp = chosenGsus * THROUGHPUT_PER_GSU;
+
+        // Update Slider Max dynamically based on max of all scenarios
+        const customMaxGsus = Math.max(1, Math.ceil(max_tp / THROUGHPUT_PER_GSU));
+        if (gsuSlider.max != customMaxGsus) {
+          gsuSlider.max = customMaxGsus;
+        }
+
+        const mixPrioPct = parseInt(mixSlider.value) / 100.0;
+        const mixStdPct = 1.0 - mixPrioPct;
+
+        // Update Badges
+        document.getElementById('badge-gsu').innerText = `${chosenGsus} GSUs (${formatNum(pt_tp)} t/s)`;
+        document.getElementById('badge-mix').innerText = `${(mixPrioPct * 100).toFixed(0)}% Prio / ${(mixStdPct * 100).toFixed(0)}% Std`;
+
+        // Coverage and Spillage Calculations
+        let spillPeak_in = 0, spillPeak_out = 0;
+        let spillLow_in = 0, spillLow_out = 0;
+        let spillAvg_in = 0, spillAvg_out = 0;
+        let costPeakTot = 0, costLowTot = 0, costAvgTot = 0;
+
+        let costPeak_prio_in = 0, costPeak_prio_out = 0, costPeak_std_in = 0, costPeak_std_out = 0;
+        let costLow_prio_in = 0, costLow_prio_out = 0, costLow_std_in = 0, costLow_std_out = 0;
+        let costAvg_prio_in = 0, costAvg_prio_out = 0, costAvg_std_in = 0, costAvg_std_out = 0;
+
+        if (currentCuj === 'cuj3') {
+          const rAvg = Math.min(1.0, avg_tp > 0 ? pt_tp / avg_tp : 1);
+          spillAvg_in = inputs.avg.in * (1 - rAvg);
+          spillAvg_out = inputs.avg.out * (1 - rAvg);
+
+          costAvg_prio_in = calcPaygoPrice(spillAvg_in * mixPrioPct, 24, PAYGO_PRIO.in);
+          costAvg_prio_out = calcPaygoPrice(spillAvg_out * mixPrioPct, 24, PAYGO_PRIO.out);
+          costAvg_std_in = calcPaygoPrice(spillAvg_in * mixStdPct, 24, PAYGO_STD.in);
+          costAvg_std_out = calcPaygoPrice(spillAvg_out * mixStdPct, 24, PAYGO_STD.out);
+          costAvgTot = costAvg_prio_in + costAvg_prio_out + costAvg_std_in + costAvg_std_out;
+        } else {
+          const rPeak = Math.min(1.0, peak_tp > 0 ? pt_tp / peak_tp : 1);
+          spillPeak_in = inputs.peak.in * (1 - rPeak);
+          spillPeak_out = inputs.peak.out * (1 - rPeak);
+
+          const rLow = Math.min(1.0, low_tp > 0 ? pt_tp / low_tp : 1);
+          spillLow_in = inputs.low.in * (1 - rLow);
+          spillLow_out = inputs.low.out * (1 - rLow);
+
+          costPeak_prio_in = calcPaygoPrice(spillPeak_in * mixPrioPct, inputs.peak.hours, PAYGO_PRIO.in);
+          costPeak_prio_out = calcPaygoPrice(spillPeak_out * mixPrioPct, inputs.peak.hours, PAYGO_PRIO.out);
+          costPeak_std_in = calcPaygoPrice(spillPeak_in * mixStdPct, inputs.peak.hours, PAYGO_STD.in);
+          costPeak_std_out = calcPaygoPrice(spillPeak_out * mixStdPct, inputs.peak.hours, PAYGO_STD.out);
+          costPeakTot = costPeak_prio_in + costPeak_prio_out + costPeak_std_in + costPeak_std_out;
+
+          costLow_prio_in = calcPaygoPrice(spillLow_in * mixPrioPct, inputs.low.hours, PAYGO_PRIO.in);
+          costLow_prio_out = calcPaygoPrice(spillLow_out * mixPrioPct, inputs.low.hours, PAYGO_PRIO.out);
+          costLow_std_in = calcPaygoPrice(spillLow_in * mixStdPct, inputs.low.hours, PAYGO_STD.in);
+          costLow_std_out = calcPaygoPrice(spillLow_out * mixStdPct, inputs.low.hours, PAYGO_STD.out);
+          costLowTot = costLow_prio_in + costLow_prio_out + costLow_std_in + costLow_std_out;
+        }
+
+        const totalPaygo = currentCuj === 'cuj3' ? costAvgTot : (costPeakTot + costLowTot);
+
+        const prices = PT_PRICES || { w1: 0, m1: 0, m3: 0, m12: 0 };
+        const ptMonthly = chosenGsus * prices.m1;
+        const pt12Month = chosenGsus * prices.m12;
+        const pt3Month = chosenGsus * prices.m3;
+        const pt1Week = chosenGsus * prices.w1;
+
+        const totalMonthly = totalPaygo + ptMonthly;
+
+        const rows = [
+          { c1: `Provisioned Base (${chosenGsus} GSUs)`, c2: formatNum(pt_tp) + " " + unitLabel, c3: chosenGsus, c4: formatUSD(pt1Week), c5: formatUSD(ptMonthly), c6: formatUSD(pt3Month), c7: formatUSD(pt12Month) }
+        ];
+
+        if (currentCuj === 'cuj3') {
+          if (spillAvg_in > 0 || spillAvg_out > 0) {
+            rows.push({ c1: `Spillage Mix for ~24h:`, c2: "<strong>Spillage:</strong>", bold: false });
+            if (mixPrioPct > 0) {
+              rows.push({ c1: `--> Prio (${(mixPrioPct * 100).toFixed(0)}%): input ${unitLabel}`, c2: formatNum(spillAvg_in * mixPrioPct), c3: "-", c4: formatUSD(costAvg_prio_in), c5: formatUSD(costAvg_prio_in), c6: formatUSD(costAvg_prio_in), c7: formatUSD(costAvg_prio_in) });
+              rows.push({ c1: `--> Prio (${(mixPrioPct * 100).toFixed(0)}%): output ${unitLabel}`, c2: formatNum(spillAvg_out * mixPrioPct), c3: "-", c4: formatUSD(costAvg_prio_out), c5: formatUSD(costAvg_prio_out), c6: formatUSD(costAvg_prio_out), c7: formatUSD(costAvg_prio_out) });
+            }
+            if (mixStdPct > 0) {
+              rows.push({ c1: `--> Std (${(mixStdPct * 100).toFixed(0)}%): input ${unitLabel}`, c2: formatNum(spillAvg_in * mixStdPct), c3: "-", c4: formatUSD(costAvg_std_in), c5: formatUSD(costAvg_std_in), c6: formatUSD(costAvg_std_in), c7: formatUSD(costAvg_std_in) });
+              rows.push({ c1: `--> Std (${(mixStdPct * 100).toFixed(0)}%): output ${unitLabel}`, c2: formatNum(spillAvg_out * mixStdPct), c3: "-", c4: formatUSD(costAvg_std_out), c5: formatUSD(costAvg_std_out), c6: formatUSD(costAvg_std_out), c7: formatUSD(costAvg_std_out) });
+            }
+          }
+        } else {
+          // Only push peak calculations if there's peak spillage
+          if (spillPeak_in > 0 || spillPeak_out > 0) {
+            rows.push({ c1: `Peak Spillage Mix for ~${inputs.peak.hours}h:`, c2: "<strong>Spillage:</strong>", bold: false });
+            if (mixPrioPct > 0) {
+              rows.push({ c1: `--> Prio (${(mixPrioPct * 100).toFixed(0)}%): input ${unitLabel}`, c2: formatNum(spillPeak_in * mixPrioPct), c3: "-", c4: formatUSD(costPeak_prio_in), c5: formatUSD(costPeak_prio_in), c6: formatUSD(costPeak_prio_in), c7: formatUSD(costPeak_prio_in) });
+              rows.push({ c1: `--> Prio (${(mixPrioPct * 100).toFixed(0)}%): output ${unitLabel}`, c2: formatNum(spillPeak_out * mixPrioPct), c3: "-", c4: formatUSD(costPeak_prio_out), c5: formatUSD(costPeak_prio_out), c6: formatUSD(costPeak_prio_out), c7: formatUSD(costPeak_prio_out) });
+            }
+            if (mixStdPct > 0) {
+              rows.push({ c1: `--> Std (${(mixStdPct * 100).toFixed(0)}%): input ${unitLabel}`, c2: formatNum(spillPeak_in * mixStdPct), c3: "-", c4: formatUSD(costPeak_std_in), c5: formatUSD(costPeak_std_in), c6: formatUSD(costPeak_std_in), c7: formatUSD(costPeak_std_in) });
+              rows.push({ c1: `--> Std (${(mixStdPct * 100).toFixed(0)}%): output ${unitLabel}`, c2: formatNum(spillPeak_out * mixStdPct), c3: "-", c4: formatUSD(costPeak_std_out), c5: formatUSD(costPeak_std_out), c6: formatUSD(costPeak_std_out), c7: formatUSD(costPeak_std_out) });
+            }
+          }
+
+          // Only push low calculations if there's low spillage
+          if (spillLow_in > 0 || spillLow_out > 0) {
+            rows.push({ c1: `Low Spillage Mix for ~${inputs.low.hours}h:`, c2: "<strong>Spillage:</strong>", bold: false });
+            if (mixPrioPct > 0) {
+              rows.push({ c1: `--> Prio (${(mixPrioPct * 100).toFixed(0)}%): input ${unitLabel}`, c2: formatNum(spillLow_in * mixPrioPct), c3: "-", c4: formatUSD(costLow_prio_in), c5: formatUSD(costLow_prio_in), c6: formatUSD(costLow_prio_in), c7: formatUSD(costLow_prio_in) });
+              rows.push({ c1: `--> Prio (${(mixPrioPct * 100).toFixed(0)}%): output ${unitLabel}`, c2: formatNum(spillLow_out * mixPrioPct), c3: "-", c4: formatUSD(costLow_prio_out), c5: formatUSD(costLow_prio_out), c6: formatUSD(costLow_prio_out), c7: formatUSD(costLow_prio_out) });
+            }
+            if (mixStdPct > 0) {
+              rows.push({ c1: `--> Std (${(mixStdPct * 100).toFixed(0)}%): input ${unitLabel}`, c2: formatNum(spillLow_in * mixStdPct), c3: "-", c4: formatUSD(costLow_std_in), c5: formatUSD(costLow_std_in), c6: formatUSD(costLow_std_in), c7: formatUSD(costLow_std_in) });
+              rows.push({ c1: `--> Std (${(mixStdPct * 100).toFixed(0)}%): output ${unitLabel}`, c2: formatNum(spillLow_out * mixStdPct), c3: "-", c4: formatUSD(costLow_std_out), c5: formatUSD(costLow_std_out), c6: formatUSD(costLow_std_out), c7: formatUSD(costLow_std_out) });
+            }
+          }
+        }
+
+        rows.push({ c1: `Total PayGo Spillage`, c2: "", c3: "", c4: "<strong>" + formatUSD(totalPaygo) + "</strong>", c5: "<strong>" + formatUSD(totalPaygo) + "</strong>", c6: "<strong>" + formatUSD(totalPaygo) + "</strong>", c7: "<strong>" + formatUSD(totalPaygo) + "</strong>" });
+        rows.push({ c1: "", c2: "Total Monthly", bold: true, c4: formatUSDHighlight(totalPaygo + pt1Week), c5: formatUSDHighlight(totalMonthly), c6: formatUSDHighlight(totalPaygo + pt3Month), c7: formatUSDHighlight(totalPaygo + pt12Month) });
+
+        const customTableHtml = createTableHTML("★: Custom Scenario Analysis", "color-custom", rows);
+        document.getElementById("custom-table-wrapper").innerHTML = customTableHtml;
+      } catch (e) {
+        console.error("Error in calculateCustom:", e);
+      }
+    }
+    function calculateComparison() {
+      // Read Workload Profile
+      const wl = {
+        textIn: parseFloat(document.getElementById('wl-text-in').value) || 0,
+        imgIn: parseFloat(document.getElementById('wl-img-in').value) || 0,
+        audIn: parseFloat(document.getElementById('wl-aud-in').value) || 0,
+        vidIn: parseFloat(document.getElementById('wl-vid-in').value) || 0,
+        textOut: parseFloat(document.getElementById('wl-text-out').value) || 0,
+        imgOut: parseFloat(document.getElementById('wl-img-out').value) || 0,
+        vidOut: parseFloat(document.getElementById('wl-vid-out').value) || 0
+      };
+
+      const qps = {
+        avg: parseFloat(document.getElementById('avg-qps').value) || 0,
+        peak: parseFloat(document.getElementById('peak-qps').value) || 0
+      };
+
+      const rows = [];
+
+      for (const modelId in MODEL_SPECS) {
+        try {
+          const spec = MODEL_SPECS[modelId];
+
+          // Hide image models if no image output is specified
+          if (spec.primary_modality === 'Image' && (!wl.imgOut || wl.imgOut <= 0)) {
+            continue;
+          }
+
+          let br = spec.burndown_rates.standard;
+
+          let inUnits = 0;
+          let outUnits = 0;
+
+          if (spec.model_family === 'Veo') {
+            outUnits = wl.vidOut * br.output_video_second;
+          } else {
+            inUnits = (wl.textIn * (br.input_text_token || 0)) +
+              (wl.imgIn * (br.input_image_token || 0)) +
+              (wl.vidIn * (br.input_video_token || 0)) +
+              (wl.audIn * (br.input_audio_token || 0));
+            outUnits = (wl.textOut * (br.output_text_token || 0)) +
+              (wl.imgOut * (br.output_image_token || 0));
+          }
+
+          const totalUnitsAvg = (inUnits + outUnits) * qps.avg;
+          const totalUnitsPeak = (inUnits + outUnits) * qps.peak;
+
+          const gsusAvg = Math.ceil(totalUnitsAvg / spec.throughput_per_gsu);
+          const gsusPeak = Math.ceil(totalUnitsPeak / spec.throughput_per_gsu);
+
+          let costAvg_m1 = "N/A";
+          let costPeak_m1 = "N/A";
+
+          if (spec.ptPrices) {
+            costAvg_m1 = formatUSD(gsusAvg * spec.ptPrices.m1);
+            costPeak_m1 = formatUSD(gsusPeak * spec.ptPrices.m1);
+          }
+
+          rows.push({
+            c1: modelId,
+            c2: formatNum(totalUnitsAvg),
+            c3: gsusAvg,
+            c4: costAvg_m1,
+            c5: formatNum(totalUnitsPeak),
+            c6: gsusPeak,
+            c7: costPeak_m1
+          });
+        } catch (e) {
+          console.error(`Error processing model ${modelId} in comparison:`, e);
+        }
+      }
+
+      // Simple Table Generator for Comparison
+      let html = `<div class="scenario-table-container color-comparison">`;
+      html += `<div class="scenario-title"><span>Model Comparison Matrix (1 Month Commit Rates)</span></div>`;
+      html += `<table><thead><tr><th>Model</th><th>Avg Units/s</th><th>Avg GSUs</th><th>Avg Cost/mo</th><th>Peak Units/s</th><th>Peak GSUs</th><th>Peak Cost/mo</th></tr></thead><tbody>`;
+      rows.forEach(r => {
+        html += `<tr><td>${r.c1}</td><td>${r.c2}</td><td>${r.c3}</td><td>${r.c4}</td><td>${r.c5}</td><td>${r.c6}</td><td>${r.c7}</td></tr>`;
+      });
+      html += `</tbody></table></div>`;
+
+      document.getElementById("comparison-table-wrapper").innerHTML = html;
+    }
+
+    function switchTab(tabId) {
+      // Update buttons
+      ['inputs', 'results', 'custom', 'readme'].forEach(id => {
+        const btn = document.getElementById(`tab-btn-${id}`);
+        const panel = document.getElementById(`tab-${id}`);
+        if (btn) btn.classList.remove('active');
+        if (panel) panel.classList.remove('active');
+      });
+
+      // Update panels
+      document.getElementById('tab-btn-' + tabId).classList.add('active');
+      document.getElementById('tab-' + tabId).classList.add('active');
+
+      // Ensure calculations are up to date when switching to results
+      if (tabId === 'results' || tabId === 'custom') {
+        calculate();
+      }
+
+      // Scroll to top to ensure the user sees the start of the tab content
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Attach logic for immediate calculation whenever any input changes
+    document.querySelectorAll('input:not(.custom-range)').forEach(input => {
+      input.addEventListener('input', calculate);
+    });
+
+    document.querySelectorAll('.custom-range').forEach(slider => {
+      slider.addEventListener('input', calculateCustom);
+    });
+
+    // Run first calculation visually
+    window.addEventListener('DOMContentLoaded', () => {
+      updateModelSpecs(currentModelId);
+      calculate();
+    });
+  </script>
+</body>
+
+</html>
