@@ -699,16 +699,18 @@
 <body>
 
   <div class="header">
-    <h1>Vertex AI Capacity Planner</h1>
-    <p>Strategy Modeling & Cost Estimations for Google Models on Vertex AI</p>
+    <h1>Google Cloud - AI Capacity Planner & Strategy</h1>
+    <p>Strategy Modeling & Cost Estimations for Google Models on the Gemini Enterprise Agent Platform</p>
   </div>
 
   <div class="container">
 
     <!-- Tab Navigation -->
     <div class="tab-navigation">
-      <button type="button" class="tab-btn active" onclick="switchTab('inputs')" id="tab-btn-inputs">Configuration & Inputs</button>
-      <button type="button" class="tab-btn" onclick="switchTab('results')" id="tab-btn-results">Predefined Scenarios</button>
+      <button type="button" class="tab-btn active" onclick="switchTab('inputs')" id="tab-btn-inputs">Configuration &
+        Inputs</button>
+      <button type="button" class="tab-btn" onclick="switchTab('results')" id="tab-btn-results">Predefined
+        Scenarios</button>
       <button type="button" class="tab-btn" onclick="switchTab('custom')" id="tab-btn-custom">Custom Explorer</button>
 
       <button type="button" class="tab-btn" onclick="switchTab('readme')" id="tab-btn-readme">Readme & Guide</button>
@@ -1352,7 +1354,7 @@
       document.getElementById('spec-tooltip-throughput').innerText = `${THROUGHPUT_PER_GSU} units / second / GSU`;
 
       if (PT_PRICES) {
-        document.getElementById('spec-tooltip-pt').innerHTML = `1 Week: $${PT_PRICES.w1.toLocaleString()}/mo<br> 1 Month: $${PT_PRICES.m1.toLocaleString()}/mo<br> 3 Month: $${PT_PRICES.m3.toLocaleString()}/mo<br> 12 Month: $${PT_PRICES.m12.toLocaleString()}/mo`;
+        document.getElementById('spec-tooltip-pt').innerHTML = `1 Week: $${PT_PRICES.w1.toLocaleString()}/wk<br> 1 Month: $${PT_PRICES.m1.toLocaleString()}/mo<br> 3 Month: $${PT_PRICES.m3.toLocaleString()}/mo<br> 12 Month: $${PT_PRICES.m12.toLocaleString()}/mo`;
       } else {
         document.getElementById('spec-tooltip-pt').innerHTML = "N/A (PayGo only)";
       }
@@ -1444,6 +1446,7 @@
     }
 
     const DAYS_PER_MONTH = 30;
+    const WEEKS_PER_MONTH = 4; // 1-week commit prices are billed weekly; multiply by 4 to express as monthly cost
 
     function formatUSD(num) {
       if (typeof num !== 'number') return num;
@@ -1556,7 +1559,7 @@
       return {
         tp: tp,
         gsus: GSUs,
-        price_w1: GSUs * prices.w1,
+        price_w1: GSUs * prices.w1 * WEEKS_PER_MONTH,
         price_m1: GSUs * prices.m1,
         price_m3: GSUs * prices.m3,
         price_m12: GSUs * prices.m12
@@ -1688,7 +1691,7 @@
         const costPrio = getPaygoCost(currentModelId, inputs.avg.in, inputs.avg.out, 24, 'priority');
 
         const prices = PT_PRICES || { w1: 0, m1: 0, m3: 0, m12: 0 };
-        const pt1w = ptA.gsus * prices.w1;
+        const pt1w = ptA.gsus * prices.w1 * WEEKS_PER_MONTH;
         const pt1m = ptA.gsus * prices.m1;
         const pt3m = ptA.gsus * prices.m3;
         const pt12m = ptA.gsus * prices.m12;
@@ -1994,7 +1997,7 @@
         const ptMonthly = chosenGsus * prices.m1;
         const pt12Month = chosenGsus * prices.m12;
         const pt3Month = chosenGsus * prices.m3;
-        const pt1Week = chosenGsus * prices.w1;
+        const pt1Week = chosenGsus * prices.w1 * WEEKS_PER_MONTH;
 
         const totalMonthly = totalPaygo + ptMonthly;
 
